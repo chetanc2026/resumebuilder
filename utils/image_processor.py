@@ -3,7 +3,7 @@ from PIL import Image
 import os
 
 def extract_text_from_image(uploaded_file):
-    """Extract job details from LinkedIn screenshot using Gemini 1.5 Flash"""
+    """Extract job details from LinkedIn screenshot using Gemini 1.5 Flash-latest"""
     try:
         # Configure Gemini - ensure GEMINI_API_KEY is in your environment/secrets
         api_key = os.environ.get("GEMINI_API_KEY")
@@ -16,7 +16,7 @@ def extract_text_from_image(uploaded_file):
         img = Image.open(uploaded_file)
         
         # Use gemini-1.5-flash for fast, cost-effective vision processing
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        model = genai.GenerativeModel('gemini-1.5-flash-latest')
         
         prompt = """Analyze this LinkedIn job posting screenshot and extract the following information:
 
