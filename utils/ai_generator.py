@@ -13,7 +13,7 @@ def configure_genai():
 def generate_tailored_resume(job_details, resume_content):
     """Tailor resume to job requirements using Gemini"""
     configure_genai()
-    model = genai.GenerativeModel('gemini-1.5-flash') # Use 'gemini-1.5-pro' for higher quality
+    model = genai.GenerativeModel('gemini-1.5-flash-latest') # Use 'gemini-1.5-pro' for higher quality
     
     prompt = f"""You are an expert professional resume writer. Your task is to tailor the provided resume to perfectly match the job requirements while maintaining the original structure and formatting.
 
@@ -38,7 +38,7 @@ Please provide the COMPLETE tailored resume as the output."""
 def generate_ats_score(resume_text, job_details):
     """Calculate ATS compatibility score using Gemini"""
     configure_genai()
-    model = genai.GenerativeModel('gemini-1.5-flash')
+    model = genai.GenerativeModel('gemini-1.5-flash-latest')
     
     prompt = f"""Analyze the resume against job requirements and provide an ATS (Applicant Tracking System) compatibility score.
 
@@ -84,7 +84,7 @@ RESUME:
 def generate_email_draft(job_details, resume_content):
     """Generate professional email draft using Gemini"""
     configure_genai()
-    model = genai.GenerativeModel('gemini-1.5-flash')
+    model = genai.GenerativeModel('gemini-1.5-flash-latest')
     
     prompt = f"""Write a professional job application email based on this job posting. 
     150-200 words, starting with a Subject line.
@@ -98,7 +98,7 @@ def generate_email_draft(job_details, resume_content):
 def generate_linkedin_message(job_details, resume_content):
     """Generate LinkedIn message using Gemini"""
     configure_genai()
-    model = genai.GenerativeModel('gemini-1.5-flash')
+    model = genai.GenerativeModel('gemini-1.5-flash-latest')
     
     prompt = f"""Write a short (under 100 words) LinkedIn connection message for this role.
     JOB DETAILS: {job_details}
