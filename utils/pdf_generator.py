@@ -2,6 +2,29 @@ from fpdf import FPDF
 import io
 import textwrap
 
+
+def _sanitize_pdf_text(text):
+    """Convert common Unicode punctuation to PDF core-font-safe text."""
+    replacements = {
+        "\u2013": "-",   # en dash
+        "\u2014": "-",   # em dash
+        "\u2018": "'",   # left single quote
+        "\u2019": "'",   # right single quote
+        "\u201c": '"',   # left double quote
+        "\u201d": '"',   # right double quote
+        "\u2026": "...", # ellipsis
+        "\u00a0": " ",   # non-breaking space
+        "\u2022": "-",   # bullet
+        "\u25cf": "-",   # black circle
+        "\u25aa": "-",   # small square
+    }
+
+    for src, dst in replacements.items():
+        text = text.replace(src, dst)
+
+    # Keep only characters supported by core fonts.
+    return text.encode("latin-1", errors="ignore").decode("latin-1")
+
 def create_resume_pdf(resume_text):
     """Create a professionally formatted PDF from resume text"""
     
@@ -13,7 +36,7 @@ def create_resume_pdf(resume_text):
         pdf.set_margins(left=10, top=10, right=10)
         
         # Process resume text
-        lines = resume_text.split("\n")
+        lines = _sanitize_pdf_text(resume_text).split("\n")
         
         # Track for section headers
         in_section = False
@@ -24,6 +47,9 @@ def create_resume_pdf(resume_text):
             if not line_stripped:
                 pdf.ln(3)  # Small spacing for blank lines
                 continue
+
+            # Keep cursor at left margin before writing any new content line.
+            pdf.set_x(pdf.l_margin)
             
             # Check if line is a section header (all caps, relatively short)
             is_header = (
@@ -52,13 +78,11 @@ def create_resume_pdf(resume_text):
                 
                 # Handle multi-line bullets
                 wrapped_text = textwrap.fill(bullet_text, width=70)
-                for wrapped_line in wrapped_text.split("\n"):
-                    if wrapped_line == wrapped_text.split("\n")[0]:
-                        pdf.cell(5, 5, "•", ln=False)
-                        pdf.multi_cell(0, 5, wrapped_line)
-                    else:
-                        pdf.set_x(15)
-                        pdf.multi_cell(0, 5, wrapped_line)
+                wrapped_lines = wrapped_text.split("\n")
+                for idx, wrapped_line in enumerate(wrapped_lines):
+                    pdf.set_x(15)
+                    prefix = "- " if idx == 0 else "  "
+                    pdf.multi_cell(0, 5, f"{prefix}{wrapped_line}")
             
             elif any(char.isdigit() for char in line_stripped[:10]):
                 # Likely a date or numbered entry
@@ -75,8 +99,9 @@ def create_resume_pdf(resume_text):
                 pdf.add_page()
                 pdf.set_margins(left=10, top=10, right=10)
         
-        # Convert to bytes
-        pdf_bytes = pdf.output(dest="S").encode("latin-1")
+        # Convert to bytes across fpdf2 versions.
+        raw_output = pdf.output(dest="S")
+        pdf_bytes = raw_output.encode("latin-1") if isinstance(raw_output, str) else bytes(raw_output)
         return pdf_bytes
     
     except Exception as e:
@@ -96,12 +121,13 @@ def create_styled_resume_pdf(resume_text, candidate_name=""):
         
         # Add name if provided
         if candidate_name:
+            candidate_name = _sanitize_pdf_text(candidate_name)
             pdf.set_font("Arial", "B", 16)
             pdf.cell(0, 8, candidate_name, ln=True, align="C")
             pdf.ln(2)
         
         # Process resume
-        lines = resume_text.split("\n")
+        lines = _sanitize_pdf_text(resume_text).split("\n")
         
         for line in lines:
             line_stripped = line.strip()
@@ -109,6 +135,9 @@ def create_styled_resume_pdf(resume_text, candidate_name=""):
             if not line_stripped:
                 pdf.ln(2)
                 continue
+
+            # Keep cursor at left margin before writing any new content line.
+            pdf.set_x(pdf.l_margin)
             
             # Section headers
             if (line_stripped.isupper() and 
@@ -139,7 +168,8 @@ def create_styled_resume_pdf(resume_text, candidate_name=""):
             if pdf.will_page_break(4):
                 pdf.add_page()
         
-        return pdf.output(dest="S").encode("latin-1")
+        raw_output = pdf.output(dest="S")
+        return raw_output.encode("latin-1") if isinstance(raw_output, str) else bytes(raw_output)
     
     except Exception as e:
         # Fallback to simple version
