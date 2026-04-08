@@ -45,6 +45,33 @@ def _normalize_line(line):
     return line.strip()
 
 
+def _is_noise_line(line):
+    line = _normalize_line(line).lower()
+    if not line:
+        return False
+
+    noise_phrases = (
+        "job requirements",
+        "original resume",
+        "tailored resume",
+        "provide the complete",
+        "directly addressing the job requirements",
+        "you are an expert resume writer",
+        "format:",
+        "score:",
+        "keywords_found",
+        "keywords_missing",
+        "suggestions:",
+    )
+    if any(phrase in line for phrase in noise_phrases):
+        return True
+
+    # Drop long shouty instruction lines that appear above the candidate name.
+    alpha = re.sub(r"[^a-z]", "", line)
+    upperish = len(alpha) > 20 and line == line.upper()
+    return upperish and len(line) > 60
+
+
 def _is_section_header(line):
     normalized = _clean_label(line)
     if not normalized:
@@ -151,6 +178,10 @@ def _extract_header_block(lines):
     body_start_index = 0
 
     for index, line in enumerate(lines):
+        if _is_noise_line(line):
+            body_start_index = index + 1
+            continue
+
         if _is_section_header(line):
             body_start_index = index
             break
@@ -268,7 +299,7 @@ def _render_resume(pdf, resume_text, candidate_name=""):
     pdf.add_page()
     pdf.set_text_color(0, 0, 0)
 
-    lines = cleaned_text.split("\n")
+    lines = [line for line in cleaned_text.split("\n") if not _is_noise_line(line)]
     header_lines, body_start_index = _extract_header_block(lines)
     _render_header(pdf, header_lines, layout, candidate_name=candidate_name)
 
