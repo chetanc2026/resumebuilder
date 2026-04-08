@@ -6,10 +6,7 @@ import io
 from utils.image_processor import extract_text_from_image
 from utils.resume_processor import extract_resume_text
 from utils.ai_generator import (
-    generate_tailored_resume, 
-    generate_ats_score, 
-    generate_email_draft, 
-    generate_linkedin_message,
+    generate_application_package,
     get_active_model_name,
 )
 from utils.pdf_generator import create_resume_pdf
@@ -224,28 +221,29 @@ if generate_button:
         resume_content = extract_resume_text(resume_file)
         st.session_state.results["resume_content"] = resume_content
         
-        # Step 3: Tailor resume
-        status_text.info("✨ Step 3/6: Tailoring resume to job requirements...")
+        # Step 3: Generate full application package in one call (quota-friendly)
+        status_text.info("✨ Step 3/6: Generating tailored resume and outreach package...")
         progress_bar.progress(45)
-        tailored_resume = generate_tailored_resume(job_details, resume_content)
+        package = generate_application_package(job_details, resume_content)
+        tailored_resume = package.get("tailored_resume", "")
         st.session_state.results["tailored_resume"] = tailored_resume
         
-        # Step 4: Calculate ATS score
-        status_text.info("📊 Step 4/6: Calculating ATS compatibility score...")
+        # Step 4: Read ATS score from package
+        status_text.info("📊 Step 4/6: Finalizing ATS analysis...")
         progress_bar.progress(60)
-        ats_result = generate_ats_score(tailored_resume, job_details)
+        ats_result = package.get("ats_result", {})
         st.session_state.results["ats_result"] = ats_result
         
-        # Step 5: Generate email draft
-        status_text.info("📧 Step 5/6: Creating professional email...")
+        # Step 5: Read email draft from package
+        status_text.info("📧 Step 5/6: Preparing professional email...")
         progress_bar.progress(75)
-        email_draft = generate_email_draft(job_details, resume_content)
+        email_draft = package.get("email_draft", "")
         st.session_state.results["email_draft"] = email_draft
         
-        # Step 6: Generate LinkedIn message
-        status_text.info("💼 Step 6/6: Writing LinkedIn message...")
+        # Step 6: Read LinkedIn message from package
+        status_text.info("💼 Step 6/6: Preparing LinkedIn message...")
         progress_bar.progress(85)
-        linkedin_msg = generate_linkedin_message(job_details, resume_content)
+        linkedin_msg = package.get("linkedin_msg", "")
         st.session_state.results["linkedin_msg"] = linkedin_msg
         
         # Step 7: Create PDF
