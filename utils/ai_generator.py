@@ -82,13 +82,38 @@ def get_active_model_name():
 
 def generate_tailored_resume(job_details, resume_content):
     model = get_generative_model()
-    
-    prompt = f"""You are an expert resume writer. Tailor this resume to match the job requirements perfectly while keeping the original structure.
-    JOB REQUIREMENTS:
-    {job_details}
-    ORIGINAL RESUME:
-    {resume_content}
-    Provide the COMPLETE tailored resume."""
+
+        prompt = f"""You are a professional resume writer. Rewrite the resume into a clean, ATS-friendly, American-style resume.
+
+Hard rules:
+- Output plain text only. No markdown, no bullets with symbols other than standard bullet lines, no tables, no icons, no explanations.
+- Keep it to one page by being concise and removing low-value content.
+- Use the exact section structure below and nothing else:
+    NAME
+    Phone | Email | LinkedIn | Location
+    PROFESSIONAL SUMMARY
+    EDUCATION
+    EXPERIENCE
+    PROJECTS
+    SKILLS
+    ACHIEVEMENTS & LEADERSHIP
+- Use concise language, strong action verbs, and measurable impact where possible.
+- Keep bullets to one line whenever possible. Maximum 3 bullets per role or project.
+- Omit weak, repetitive, or low-priority details if space is limited.
+- No first-person pronouns. Keep tense consistent.
+- Align dates to the right using the pattern: Company | Role | Dates or Institution | Degree | Dates.
+- Do not include sentences like "willing to relocate".
+- Keep the summary to 2-3 lines maximum.
+- Education should include institution, location, degree, and dates.
+- Skills must be grouped by category on separate lines, for example: Sales: ... | Analytics: ... | Tools: ...
+
+JOB REQUIREMENTS:
+{job_details}
+
+SOURCE RESUME:
+{resume_content}
+
+Return only the final resume text in the structure above."""
 
     response = model.generate_content(prompt)
     return response.text

@@ -143,33 +143,33 @@ def _detect_candidate_profile(resume_text):
 def _layout_for_profile(profile):
     if profile == "fresher":
         return {
-            "margin": 9,
-            "title_size": 16,
-            "section_size": 11.5,
-            "body_size": 9.25,
-            "body_height": 3.8,
-            "bullet_indent": 13,
-            "name_spacing": 1.0,
-            "section_spacing": 1.25,
-            "paragraph_spacing": 1.0,
-            "bottom_margin": 10,
+            "margin": 8,
+            "title_size": 14.5,
+            "section_size": 10.5,
+            "body_size": 8.4,
+            "body_height": 3.45,
+            "bullet_indent": 11,
+            "name_spacing": 0.8,
+            "section_spacing": 0.9,
+            "paragraph_spacing": 0.8,
+            "bottom_margin": 8,
         }
 
     return {
-        "margin": 12,
-        "title_size": 16,
-        "section_size": 11.5,
-        "body_size": 9.75,
-        "body_height": 4.05,
-        "bullet_indent": 14,
-        "name_spacing": 1.2,
-        "section_spacing": 1.5,
-        "paragraph_spacing": 1.2,
-        "bottom_margin": 12,
+        "margin": 8,
+        "title_size": 14.5,
+        "section_size": 10.5,
+        "body_size": 8.1,
+        "body_height": 3.3,
+        "bullet_indent": 11,
+        "name_spacing": 0.8,
+        "section_spacing": 0.9,
+        "paragraph_spacing": 0.75,
+        "bottom_margin": 8,
     }
 
 
-def _apply_font(pdf, family="Times", style="", size=10):
+def _apply_font(pdf, family="Helvetica", style="", size=10):
     pdf.set_font(family, style, size)
 
 
@@ -194,6 +194,12 @@ def _extract_header_block(lines):
     return header_lines, body_start_index
 
 
+def _estimate_pdf_pages(pdf, resume_text, candidate_name=""):
+    preview = FPDF(format="A4", unit="mm")
+    _render_resume(preview, resume_text, candidate_name=candidate_name, scale=1.0, write_output=False)
+    return preview.page_no()
+
+
 def _render_header(pdf, header_lines, layout, candidate_name=""):
     heading_color = (11, 31, 58)
     body_color = (0, 0, 0)
@@ -208,13 +214,13 @@ def _render_header(pdf, header_lines, layout, candidate_name=""):
     if name_line:
         name_line = re.sub(r"[^A-Za-z0-9 .'-]", "", name_line)
         name_line = name_line.upper()
-        _apply_font(pdf, "Times", "B", layout["title_size"])
+        _apply_font(pdf, "Helvetica", "B", layout["title_size"])
         pdf.set_text_color(*body_color)
         pdf.cell(0, 7, name_line, align="C", ln=True)
 
     if header_lines:
         pdf.set_text_color(*body_color)
-        _apply_font(pdf, "Times", "", layout["body_size"] - 0.25)
+        _apply_font(pdf, "Helvetica", "", layout["body_size"] - 0.25)
         contact_line = " | ".join(line.strip(" |") for line in header_lines if line.strip())
         contact_line = re.sub(r"\s*\|\s*", " | ", contact_line)
         if contact_line:
@@ -233,13 +239,13 @@ def _render_section_header(pdf, title, layout):
     title = _clean_label(title)
     pdf.ln(layout["section_spacing"])
     pdf.set_text_color(*heading_color)
-    _apply_font(pdf, "Times", "B", layout["section_size"])
+    _apply_font(pdf, "Helvetica", "B", layout["section_size"])
     pdf.cell(0, 5.8, title.strip().upper(), ln=True)
     pdf.set_draw_color(*heading_color)
     pdf.line(pdf.l_margin, pdf.get_y(), pdf.w - pdf.r_margin, pdf.get_y())
     pdf.ln(0.8)
     pdf.set_text_color(0, 0, 0)
-    _apply_font(pdf, "Times", "", layout["body_size"])
+    _apply_font(pdf, "Helvetica", "", layout["body_size"])
 
 
 def _render_split_role_line(pdf, text, layout):
@@ -254,13 +260,13 @@ def _render_split_role_line(pdf, text, layout):
     if not re.search(r"\b(19\d{2}|20\d{2}|present|current|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\b", right.lower()):
         return False
 
-    _apply_font(pdf, "Times", "B", layout["body_size"])
+    _apply_font(pdf, "Helvetica", "B", layout["body_size"])
     pdf.cell(0, layout["body_height"], left, ln=False)
-    _apply_font(pdf, "Times", "I", layout["body_size"])
+    _apply_font(pdf, "Helvetica", "I", layout["body_size"])
     right_w = pdf.get_string_width(right)
     pdf.set_x(pdf.w - pdf.r_margin - right_w)
     pdf.cell(right_w, layout["body_height"], right, ln=True, align="R")
-    _apply_font(pdf, "Times", "", layout["body_size"])
+    _apply_font(pdf, "Helvetica", "", layout["body_size"])
     return True
 
 
@@ -275,10 +281,14 @@ def _render_bullet(pdf, line, layout):
         pdf.multi_cell(0, layout["body_height"], f"{prefix}{wrapped_line}")
 
 
-def _render_resume(pdf, resume_text, candidate_name=""):
+def _render_resume(pdf, resume_text, candidate_name="", scale=1.0, write_output=True):
     cleaned_text = _sanitize_pdf_text(resume_text)
     profile = _detect_candidate_profile(cleaned_text)
     layout = _layout_for_profile(profile)
+    layout = {
+        key: (value * scale if isinstance(value, (int, float)) else value)
+        for key, value in layout.items()
+    }
     lower_priority_sections = {
         "skills",
         "technical skills",
@@ -294,7 +304,7 @@ def _render_resume(pdf, resume_text, candidate_name=""):
         "volunteering",
     }
 
-    pdf.set_auto_page_break(auto=True, margin=layout["bottom_margin"])
+    pdf.set_auto_page_break(auto=False, margin=layout["bottom_margin"])
     pdf.set_margins(left=layout["margin"], top=layout["margin"], right=layout["margin"])
     pdf.add_page()
     pdf.set_text_color(0, 0, 0)
@@ -303,8 +313,7 @@ def _render_resume(pdf, resume_text, candidate_name=""):
     header_lines, body_start_index = _extract_header_block(lines)
     _render_header(pdf, header_lines, layout, candidate_name=candidate_name)
 
-    _apply_font(pdf, "Times", "", layout["body_size"])
-    seen_experience = False
+    _apply_font(pdf, "Helvetica", "", layout["body_size"])
 
     for line in lines[body_start_index:]:
         line_stripped = _normalize_line(line)
@@ -316,20 +325,11 @@ def _render_resume(pdf, resume_text, candidate_name=""):
         pdf.set_x(pdf.l_margin)
 
         if _is_section_header(line_stripped):
-            normalized_section = _clean_label(line_stripped).lower()
-            if profile == "experienced" and seen_experience and normalized_section in lower_priority_sections and pdf.page_no() == 1:
-                pdf.add_page()
-                pdf.set_text_color(0, 0, 0)
-                _apply_font(pdf, "Times", "", layout["body_size"])
-
-            if normalized_section in {"experience", "professional experience", "work experience", "internship experience"}:
-                seen_experience = True
-
             _render_section_header(pdf, line_stripped, layout)
             continue
 
         if line_stripped.startswith(("-", "•", "*")):
-            _apply_font(pdf, "Times", "", layout["body_size"])
+            _apply_font(pdf, "Helvetica", "", layout["body_size"])
             _render_bullet(pdf, line_stripped, layout)
             continue
 
@@ -341,10 +341,10 @@ def _render_resume(pdf, resume_text, candidate_name=""):
         if date_like and len(line_stripped) < 120:
             _apply_font(pdf, "Times", "B", layout["body_size"])
             pdf.multi_cell(0, layout["body_height"] + 0.4, line_stripped)
-            _apply_font(pdf, "Times", "", layout["body_size"])
+            _apply_font(pdf, "Helvetica", "", layout["body_size"])
             continue
 
-        _apply_font(pdf, "Times", "", layout["body_size"])
+            _apply_font(pdf, "Helvetica", "", layout["body_size"])
         pdf.multi_cell(0, layout["body_height"], line_stripped)
 
     return profile, layout
@@ -353,9 +353,16 @@ def create_resume_pdf(resume_text):
     """Create a professionally formatted PDF from resume text"""
     
     try:
-        pdf = FPDF(format="A4", unit="mm")
-        _render_resume(pdf, resume_text)
+        scales = [1.0, 0.95, 0.9, 0.85, 0.8]
+        for scale in scales:
+            pdf = FPDF(format="A4", unit="mm")
+            _render_resume(pdf, resume_text, scale=scale)
+            if pdf.page_no() == 1:
+                raw_output = pdf.output(dest="S")
+                return raw_output.encode("latin-1") if isinstance(raw_output, str) else bytes(raw_output)
 
+        pdf = FPDF(format="A4", unit="mm")
+        _render_resume(pdf, resume_text, scale=scales[-1])
         raw_output = pdf.output(dest="S")
         return raw_output.encode("latin-1") if isinstance(raw_output, str) else bytes(raw_output)
     
@@ -367,9 +374,16 @@ def create_styled_resume_pdf(resume_text, candidate_name=""):
     """Create a more styled resume PDF with better formatting"""
     
     try:
+        scales = [1.0, 0.95, 0.9, 0.85, 0.8]
+        for scale in scales:
+            pdf = FPDF(format='A4', unit='mm')
+            _render_resume(pdf, resume_text, candidate_name=candidate_name, scale=scale)
+            if pdf.page_no() == 1:
+                raw_output = pdf.output(dest="S")
+                return raw_output.encode("latin-1") if isinstance(raw_output, str) else bytes(raw_output)
+
         pdf = FPDF(format='A4', unit='mm')
-        _render_resume(pdf, resume_text, candidate_name=candidate_name)
-        
+        _render_resume(pdf, resume_text, candidate_name=candidate_name, scale=scales[-1])
         raw_output = pdf.output(dest="S")
         return raw_output.encode("latin-1") if isinstance(raw_output, str) else bytes(raw_output)
     
