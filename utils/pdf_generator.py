@@ -22,12 +22,31 @@ def _sanitize_pdf_text(text):
     for src, dst in replacements.items():
         text = text.replace(src, dst)
 
+    # Remove common markdown wrappers to avoid noisy PDF output.
+    text = re.sub(r"\*\*(.*?)\*\*", r"\1", text)
+    text = re.sub(r"__(.*?)__", r"\1", text)
+    text = text.replace("`", "")
+
     # Keep only characters supported by core fonts.
     return text.encode("latin-1", errors="ignore").decode("latin-1")
 
 
+def _clean_label(text):
+    text = _sanitize_pdf_text(text or "").strip()
+    text = re.sub(r"^[\s*#_+|:;,.\-]+", "", text)
+    text = re.sub(r"[\s*#_+|:;,.\-]+$", "", text)
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def _normalize_line(line):
+    line = _sanitize_pdf_text(line or "")
+    line = line.replace("\t", " ")
+    line = re.sub(r"\s+", " ", line)
+    return line.strip()
+
+
 def _is_section_header(line):
-    normalized = line.strip()
+    normalized = _clean_label(line)
     if not normalized:
         return False
 
@@ -136,8 +155,9 @@ def _extract_header_block(lines):
             body_start_index = index
             break
 
-        if line.strip():
-            header_lines.append(line.strip())
+        normalized = _normalize_line(line)
+        if normalized:
+            header_lines.append(normalized)
             body_start_index = index + 1
 
     return header_lines, body_start_index
@@ -147,14 +167,15 @@ def _render_header(pdf, header_lines, layout, candidate_name=""):
     heading_color = (11, 31, 58)
     body_color = (0, 0, 0)
 
-    name_line = _sanitize_pdf_text(candidate_name.strip()) if candidate_name else ""
-    header_lines = [_sanitize_pdf_text(line.strip()) for line in header_lines if line.strip()]
+    name_line = _clean_label(candidate_name) if candidate_name else ""
+    header_lines = [_normalize_line(line) for line in header_lines if _normalize_line(line)]
 
     if not name_line and header_lines:
-        name_line = header_lines[0]
+        name_line = _clean_label(header_lines[0])
         header_lines = header_lines[1:]
 
     if name_line:
+        name_line = re.sub(r"[^A-Za-z0-9 .'-]", "", name_line)
         name_line = name_line.upper()
         _apply_font(pdf, "Times", "B", layout["title_size"])
         pdf.set_text_color(*body_color)
@@ -164,6 +185,7 @@ def _render_header(pdf, header_lines, layout, candidate_name=""):
         pdf.set_text_color(*body_color)
         _apply_font(pdf, "Times", "", layout["body_size"] - 0.25)
         contact_line = " | ".join(line.strip(" |") for line in header_lines if line.strip())
+        contact_line = re.sub(r"\s*\|\s*", " | ", contact_line)
         if contact_line:
             pdf.cell(0, layout["body_height"] + 0.1, contact_line, align="C", ln=True)
 
@@ -177,6 +199,7 @@ def _render_header(pdf, header_lines, layout, candidate_name=""):
 
 def _render_section_header(pdf, title, layout):
     heading_color = (11, 31, 58)
+    title = _clean_label(title)
     pdf.ln(layout["section_spacing"])
     pdf.set_text_color(*heading_color)
     _apply_font(pdf, "Times", "B", layout["section_size"])
@@ -193,8 +216,12 @@ def _render_split_role_line(pdf, text, layout):
     if len(parts) < 2:
         return False
 
-    left = parts[0]
-    right = " | ".join(parts[1:])
+    # Typical American resume style: keep company/role on left and date/location on right.
+    left = " | ".join(parts[:-1])
+    right = parts[-1]
+
+    if not re.search(r"\b(19\d{2}|20\d{2}|present|current|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\b", right.lower()):
+        return False
 
     _apply_font(pdf, "Times", "B", layout["body_size"])
     pdf.cell(0, layout["body_height"], left, ln=False)
@@ -207,8 +234,8 @@ def _render_split_role_line(pdf, text, layout):
 
 
 def _render_bullet(pdf, line, layout):
-    bullet_text = line.lstrip("•- ").strip()
-    bullet_text = textwrap.fill(bullet_text, width=76 if layout["body_size"] >= 9.5 else 72)
+    bullet_text = _normalize_line(line.lstrip("•-* ").strip())
+    bullet_text = textwrap.fill(bullet_text, width=84 if layout["body_size"] >= 9.5 else 80)
     wrapped_lines = bullet_text.split("\n")
 
     for index, wrapped_line in enumerate(wrapped_lines):
@@ -249,7 +276,7 @@ def _render_resume(pdf, resume_text, candidate_name=""):
     seen_experience = False
 
     for line in lines[body_start_index:]:
-        line_stripped = line.strip()
+        line_stripped = _normalize_line(line)
 
         if not line_stripped:
             pdf.ln(layout["paragraph_spacing"])
@@ -258,7 +285,7 @@ def _render_resume(pdf, resume_text, candidate_name=""):
         pdf.set_x(pdf.l_margin)
 
         if _is_section_header(line_stripped):
-            normalized_section = line_stripped.strip().lower()
+            normalized_section = _clean_label(line_stripped).lower()
             if profile == "experienced" and seen_experience and normalized_section in lower_priority_sections and pdf.page_no() == 1:
                 pdf.add_page()
                 pdf.set_text_color(0, 0, 0)
