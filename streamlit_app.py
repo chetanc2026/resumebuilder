@@ -7,6 +7,7 @@ from utils.image_processor import extract_text_from_image
 from utils.resume_processor import extract_resume_text
 from utils.ai_generator import (
     generate_application_package,
+    generate_local_application_package,
     get_active_model_name,
 )
 from utils.pdf_generator import create_resume_pdf
@@ -165,17 +166,42 @@ with st.sidebar:
 # Main content
 st.markdown("## Step 1️⃣ Upload Your Documents")
 
+use_no_api_mode = False
+if not os.environ.get("GEMINI_API_KEY"):
+    use_no_api_mode = True
+
+mode_options = ["Use Gemini from screenshot", "Manual no-API mode"]
+selected_mode = st.radio(
+    "Generation mode",
+    mode_options,
+    index=1 if use_no_api_mode else 0,
+    help="Manual mode lets you build the resume without using Gemini API calls.",
+)
+manual_mode = selected_mode == "Manual no-API mode"
+
 col1, col2 = st.columns(2)
 
 with col1:
-    st.markdown("### 📸 Job Posting")
-    st.markdown("Upload a screenshot of the LinkedIn job posting")
-    job_image = st.file_uploader(
-        "Upload job posting screenshot",
-        type=["png", "jpg", "jpeg"],
-        key="job_upload",
-        label_visibility="collapsed"
-    )
+    if manual_mode:
+        st.markdown("### 📝 Job Details")
+        st.markdown("Paste the job description or requirements here")
+        job_details_text = st.text_area(
+            "Job details",
+            placeholder="Paste the full job description, requirements, and responsibilities here...",
+            height=260,
+            label_visibility="collapsed",
+        )
+        job_image = None
+    else:
+        st.markdown("### 📸 Job Posting")
+        st.markdown("Upload a screenshot of the LinkedIn job posting")
+        job_image = st.file_uploader(
+            "Upload job posting screenshot",
+            type=["png", "jpg", "jpeg"],
+            key="job_upload",
+            label_visibility="collapsed"
+        )
+        job_details_text = ""
 
 with col2:
     st.markdown("### 📄 Your Resume")
@@ -201,18 +227,29 @@ with col2:
     )
 
 if generate_button:
-    if job_image is None or resume_file is None:
-        st.error("❌ Please upload both a job posting and resume to continue")
+    if resume_file is None:
+        st.error("❌ Please upload a resume to continue")
+        st.stop()
+
+    if manual_mode and not job_details_text.strip():
+        st.error("❌ Please paste the job details to continue in manual mode")
+        st.stop()
+
+    if not manual_mode and job_image is None:
+        st.error("❌ Please upload a job posting screenshot to continue")
         st.stop()
     
     progress_bar = st.progress(0)
     status_text = st.empty()
     
     try:
-        # Step 1: Extract job details
-        status_text.info("📸 Step 1/6: Analyzing job posting...")
+        # Step 1: Get job details
+        status_text.info("📸 Step 1/6: Preparing job details...")
         progress_bar.progress(15)
-        job_details = extract_text_from_image(job_image)
+        if manual_mode:
+            job_details = job_details_text.strip()
+        else:
+            job_details = extract_text_from_image(job_image)
         st.session_state.results["job_details"] = job_details
         
         # Step 2: Extract resume
@@ -221,10 +258,13 @@ if generate_button:
         resume_content = extract_resume_text(resume_file)
         st.session_state.results["resume_content"] = resume_content
         
-        # Step 3: Generate full application package in one call (quota-friendly)
+        # Step 3: Generate application package
         status_text.info("✨ Step 3/6: Generating tailored resume and outreach package...")
         progress_bar.progress(45)
-        package = generate_application_package(job_details, resume_content)
+        if manual_mode:
+            package = generate_local_application_package(job_details, resume_content)
+        else:
+            package = generate_application_package(job_details, resume_content)
         tailored_resume = package.get("tailored_resume", "")
         st.session_state.results["tailored_resume"] = tailored_resume
         
