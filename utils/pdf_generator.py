@@ -98,14 +98,14 @@ def _layout_for_profile(profile):
     if profile == "fresher":
         return {
             "margin": 9,
-            "title_size": 15,
-            "section_size": 11.25,
-            "body_size": 9,
-            "body_height": 3.95,
+            "title_size": 16,
+            "section_size": 11.5,
+            "body_size": 9.25,
+            "body_height": 3.8,
             "bullet_indent": 13,
-            "name_spacing": 1.5,
-            "section_spacing": 1.5,
-            "paragraph_spacing": 1.2,
+            "name_spacing": 1.0,
+            "section_spacing": 1.25,
+            "paragraph_spacing": 1.0,
             "bottom_margin": 10,
         }
 
@@ -113,12 +113,12 @@ def _layout_for_profile(profile):
         "margin": 12,
         "title_size": 16,
         "section_size": 11.5,
-        "body_size": 9.5,
-        "body_height": 4.25,
+        "body_size": 9.75,
+        "body_height": 4.05,
         "bullet_indent": 14,
-        "name_spacing": 2,
-        "section_spacing": 2,
-        "paragraph_spacing": 1.5,
+        "name_spacing": 1.2,
+        "section_spacing": 1.5,
+        "paragraph_spacing": 1.2,
         "bottom_margin": 12,
     }
 
@@ -155,15 +155,17 @@ def _render_header(pdf, header_lines, layout, candidate_name=""):
         header_lines = header_lines[1:]
 
     if name_line:
+        name_line = name_line.upper()
         _apply_font(pdf, "Times", "B", layout["title_size"])
-        pdf.set_text_color(*heading_color)
+        pdf.set_text_color(*body_color)
         pdf.cell(0, 7, name_line, align="C", ln=True)
 
     if header_lines:
         pdf.set_text_color(*body_color)
-        _apply_font(pdf, "Times", "", layout["body_size"])
-        for line in header_lines:
-            pdf.cell(0, layout["body_height"] + 0.4, line, align="C", ln=True)
+        _apply_font(pdf, "Times", "", layout["body_size"] - 0.25)
+        contact_line = " | ".join(line.strip(" |") for line in header_lines if line.strip())
+        if contact_line:
+            pdf.cell(0, layout["body_height"] + 0.1, contact_line, align="C", ln=True)
 
     if name_line or header_lines:
         pdf.ln(layout["name_spacing"])
@@ -178,12 +180,30 @@ def _render_section_header(pdf, title, layout):
     pdf.ln(layout["section_spacing"])
     pdf.set_text_color(*heading_color)
     _apply_font(pdf, "Times", "B", layout["section_size"])
-    pdf.cell(0, 6, title.strip().upper(), ln=True)
+    pdf.cell(0, 5.8, title.strip().upper(), ln=True)
     pdf.set_draw_color(*heading_color)
     pdf.line(pdf.l_margin, pdf.get_y(), pdf.w - pdf.r_margin, pdf.get_y())
-    pdf.ln(1)
+    pdf.ln(0.8)
     pdf.set_text_color(0, 0, 0)
     _apply_font(pdf, "Times", "", layout["body_size"])
+
+
+def _render_split_role_line(pdf, text, layout):
+    parts = [part.strip() for part in text.split("|") if part.strip()]
+    if len(parts) < 2:
+        return False
+
+    left = parts[0]
+    right = " | ".join(parts[1:])
+
+    _apply_font(pdf, "Times", "B", layout["body_size"])
+    pdf.cell(0, layout["body_height"], left, ln=False)
+    _apply_font(pdf, "Times", "I", layout["body_size"])
+    right_w = pdf.get_string_width(right)
+    pdf.set_x(pdf.w - pdf.r_margin - right_w)
+    pdf.cell(right_w, layout["body_height"], right, ln=True, align="R")
+    _apply_font(pdf, "Times", "", layout["body_size"])
+    return True
 
 
 def _render_bullet(pdf, line, layout):
@@ -254,6 +274,10 @@ def _render_resume(pdf, resume_text, candidate_name=""):
             _apply_font(pdf, "Times", "", layout["body_size"])
             _render_bullet(pdf, line_stripped, layout)
             continue
+
+        if "|" in line_stripped and not line_stripped.startswith(("-", "•", "*")) and len(line_stripped) <= 170:
+            if _render_split_role_line(pdf, line_stripped, layout):
+                continue
 
         date_like = re.search(r"\b(19\d{2}|20\d{2})\b", line_stripped) or re.search(r"\b(present|current)\b", line_stripped.lower())
         if date_like and len(line_stripped) < 120:
