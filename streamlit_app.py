@@ -9,7 +9,8 @@ from utils.ai_generator import (
     generate_tailored_resume, 
     generate_ats_score, 
     generate_email_draft, 
-    generate_linkedin_message
+    generate_linkedin_message,
+    get_active_model_name,
 )
 from utils.pdf_generator import create_resume_pdf
 
@@ -129,6 +130,11 @@ st.markdown("""
 # Sidebar
 with st.sidebar:
     st.markdown("## 📖 How It Works")
+    try:
+        st.caption(f"Active Gemini model: {get_active_model_name()}")
+    except Exception:
+        st.caption("Active Gemini model: unavailable")
+
     st.markdown("""
     **Step 1:** Upload LinkedIn job post screenshot
     
@@ -439,7 +445,7 @@ if st.session_state.step == 2 and "ats_result" in st.session_state.results:
 st.divider()
 st.markdown("""
     <div class="footer">
-        <p>💚 <strong>QuickApply AI</strong> - Powered by Claude AI</p>
+        <p>💚 <strong>QuickApply AI</strong> - Powered by Gemini AI</p>
         <p style="font-size: 0.9rem; margin-top: 0.5rem;">Made for job seekers by job seekers</p>
     </div>
 """, unsafe_allow_html=True)

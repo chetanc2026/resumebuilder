@@ -9,18 +9,18 @@ This guide will walk you through creating a GitHub repository and deploying Quic
 ## Step 1: Get Your API Key ⚙️
 
 ### Prerequisites
-- Anthropic account (free)
+- Google AI account (free)
 
 ### Get API Key
 
-1. Go to [console.anthropic.com](https://console.anthropic.com)
+1. Go to [aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey)
 2. Sign up or log in
 3. Click **API Keys** in the left sidebar
 4. Click **Create Key**
 5. Copy your key (save it somewhere safe!)
 6. ✅ You'll need this in Step 4
 
-**API Key Format:** Should start with `sk-ant-`
+**API Key Format:** Should start with `AIza`
 
 ---
 
@@ -135,7 +135,7 @@ git push
 
 ### Prerequisites
 - GitHub account (created above)
-- Anthropic API key (from Step 1)
+- Google AI API key (from Step 1)
 
 ### Deployment Steps
 
@@ -155,7 +155,7 @@ git push
    - Scroll to **Secrets**
    - Paste your API key:
    ```
-   ANTHROPIC_API_KEY = "sk-ant-xxx..."
+   GEMINI_API_KEY = "AIzaxxx..."
    ```
 
 4. **Deploy**
@@ -279,7 +279,7 @@ git push
 - Memory: 1 GB
 - CPU: 1 CPU
 
-### Claude API Costs
+### Gemini API Costs
 
 📊 **Pricing:**
 - Input: $3 per 1M tokens
@@ -304,7 +304,7 @@ Before sharing publicly:
 - [ ] `.gitignore` excludes sensitive files
 - [ ] Repository is public (required for Streamlit)
 - [ ] No credentials in commit history
-- [ ] API key rotation is enabled (Anthropic)
+- [ ] API key rotation is enabled (Google AI)
 
 ---
 
@@ -356,9 +356,9 @@ In Streamlit Cloud:
    - Import errors: Check requirements.txt
    - File not found: Check file paths are correct
 
-3. **Anthropic Documentation**
-   - [API Docs](https://docs.anthropic.com)
-   - [API Console](https://console.anthropic.com)
+3. **Google AI Documentation**
+   - [API Docs](https://ai.google.dev)
+   - [API Console](https://aistudio.google.com/app/apikey)
 
 4. **Streamlit Documentation**
    - [Docs](https://docs.streamlit.io)
@@ -385,10 +385,10 @@ After successful deployment:
 | Service | URL |
 |---------|-----|
 | Streamlit Cloud | https://streamlit.io/cloud |
-| Anthropic Console | https://console.anthropic.com |
+| Google AI Console | https://aistudio.google.com/app/apikey |
 | GitHub | https://github.com |
 | Streamlit Docs | https://docs.streamlit.io |
-| Anthropic Docs | https://docs.anthropic.com |
+| Google AI Docs | https://ai.google.dev |
 
 ### Key Commands
 

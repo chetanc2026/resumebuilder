@@ -22,7 +22,7 @@ You now have a **complete, production-ready Streamlit application** for QuickApp
 | `utils/__init__.py` | Makes utils a Python package (empty file) |
 | `utils/image_processor.py` | Extracts job details from LinkedIn screenshots |
 | `utils/resume_processor.py` | Reads and processes resume files (PDF/DOCX/TXT) |
-| `utils/ai_generator.py` | Handles all Claude API calls and AI logic |
+| `utils/ai_generator.py` | Handles all Gemini API calls and AI logic |
 | `utils/pdf_generator.py` | Creates formatted resume PDF files |
 
 ### Documentation Files (4 files)
@@ -65,7 +65,7 @@ quickapply-ai/                          (GitHub repo root)
     ├── __init__.py                    (Empty file to make it a package)
     ├── image_processor.py             (Job extraction)
     ├── resume_processor.py            (Resume processing)
-    ├── ai_generator.py                (Claude API integration)
+    ├── ai_generator.py                (Gemini API integration)
     └── pdf_generator.py               (PDF creation)
 ```
 
@@ -76,7 +76,7 @@ quickapply-ai/                          (GitHub repo root)
 ## 🎯 Deployment Roadmap
 
 ### Phase 1: Preparation (5 minutes)
-- [ ] Get Anthropic API key from [console.anthropic.com](https://console.anthropic.com)
+- [ ] Get Google AI API key from [aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey)
 - [ ] Create GitHub account (if needed)
 - [ ] Create Streamlit account (if needed)
 
@@ -104,17 +104,17 @@ quickapply-ai/                          (GitHub repo root)
 ## 🔑 API Key Setup (CRITICAL!)
 
 ### Where to Get It:
-1. Go to [console.anthropic.com](https://console.anthropic.com)
+1. Go to [aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey)
 2. Sign up (Google or Email)
 3. Click **API Keys**
 4. Click **Create Key**
-5. Copy the key (looks like: `sk-ant-...`)
+5. Copy the key (looks like: `AIza...`)
 
 ### How to Add It:
 1. In Streamlit Cloud, go to **Settings → Secrets**
 2. Paste exactly:
    ```
-   ANTHROPIC_API_KEY = "sk-ant-YOUR_KEY_HERE"
+   GEMINI_API_KEY = "AIzaYOUR_KEY_HERE"
    ```
 3. No other quotes or formatting needed
 4. Click Save
@@ -143,7 +143,7 @@ quickapply-ai/                          (GitHub repo root)
 ```
 LinkedIn Post Screenshot
          ↓
-    Claude Vision API
+    Gemini Vision API
          ↓
    Extract Job Details
          ↓
@@ -175,8 +175,8 @@ LinkedIn Post Screenshot
 |-------|-----------|---------|
 | Frontend | Streamlit | Web interface (Python-based, no HTML coding needed) |
 | Backend | Python | Application logic |
-| AI Engine | Claude 3.5 Sonnet | Resume tailoring, ATS scoring, email/message generation |
-| Vision | Claude Vision API | Extract text from job post screenshots |
+| AI Engine | Gemini 2.0 Flash | Resume tailoring, ATS scoring, email/message generation |
+| Vision | Gemini Vision API | Extract text from job post screenshots |
 | PDF Generation | FPDF2 | Create formatted resume PDFs |
 | File Processing | PyPDF2, python-docx | Read PDF/DOCX resume files |
 | Hosting | Streamlit Cloud | Free cloud deployment (auto-scales) |
@@ -191,7 +191,7 @@ LinkedIn Post Screenshot
 - **Additional apps:** $5/month each (optional)
 - No data limits, auto-scaling
 
-### Anthropic Claude API
+### Google AI Gemini API
 - **Input tokens:** $3 per 1M tokens
 - **Output tokens:** $15 per 1M tokens
 - **Per app usage:** ~$0.05-0.10
@@ -209,9 +209,9 @@ LinkedIn Post Screenshot
 ✅ **No backend needed** - Streamlit handles everything  
 ✅ **No database needed** - Stateless application  
 ✅ **No login system** - Open for everyone to use  
-✅ **No external integrations** - Uses only Anthropic API  
+✅ **No external integrations** - Uses only Google AI API  
 ✅ **Fully automated** - No manual work required  
-✅ **Professional results** - Claude AI provides quality output  
+✅ **Professional results** - Gemini AI provides quality output  
 ✅ **Instant deployment** - Works immediately after setup  
 ✅ **Free to deploy** - Streamlit Cloud is free  
 
@@ -238,7 +238,7 @@ LinkedIn Post Screenshot
 - **API key in Secrets** - Never exposed to users
 - **Secure transmission** - HTTPS only
 - **No logging** - User resumes not logged
-- **Anthropic handling** - Subject to Anthropic's privacy policy
+- **Google AI handling** - Subject to Google AI's privacy policy
 
 ---
 
@@ -270,7 +270,7 @@ LinkedIn Post Screenshot
 
 ### External Help
 - Streamlit Docs: https://docs.streamlit.io
-- Anthropic Docs: https://docs.anthropic.com
+- Google AI Docs: https://ai.google.dev
 - Streamlit Community: https://discuss.streamlit.io
 
 ### Troubleshooting
@@ -308,7 +308,7 @@ Configuration:
 Streamlit Setup:
 [ ] Streamlit account created
 [ ] GitHub connected to Streamlit
-[ ] ANTHROPIC_API_KEY added to Secrets
+[ ] GEMINI_API_KEY added to Secrets
 [ ] App points to streamlit_app.py
 [ ] App is deploying (check logs)
 ```
@@ -318,7 +318,7 @@ Streamlit Setup:
 ## 🎯 Next Steps (In Order)
 
 1. **Read** `QUICK_START.md` (takes 5 minutes)
-2. **Get** Anthropic API key
+2. **Get** Google AI API key
 3. **Create** GitHub repo
 4. **Add** all files to repo
 5. **Deploy** to Streamlit Cloud
@@ -347,7 +347,7 @@ Streamlit Setup:
 
 ### Optimization Tips:
 - Monitor Streamlit Cloud dashboard
-- Check Claude API costs monthly
+- Check Gemini API costs monthly
 - Optimize prompts for faster responses
 - Gather user feedback for improvements
 - Update app as needed

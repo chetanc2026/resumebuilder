@@ -56,7 +56,7 @@ pillow==10.0.0
 pypdf==3.17.1
 python-docx==0.8.11
 fpdf2==2.7.0
-anthropic==0.7.1
+google-generativeai>=0.8.3
 opencv-python==4.8.1.78
 pytesseract==0.3.10
 pdf2image==1.16.3
@@ -304,13 +304,13 @@ st.markdown("""
 
 #### **utils/image_processor.py**
 ```python
-import anthropic
+import google.generativeai as genai
 import base64
 from PIL import Image
 import io
 
 def extract_text_from_image(uploaded_file):
-    """Extract job details from LinkedIn screenshot using Claude's vision API"""
+    """Extract job details from LinkedIn screenshot using Gemini's vision API"""
     
     # Read image
     image_data = uploaded_file.read()
@@ -319,11 +319,11 @@ def extract_text_from_image(uploaded_file):
     # Determine image type
     image_type = "image/png" if uploaded_file.type == "image/png" else "image/jpeg"
     
-    # Call Claude API with vision
-    client = anthropic.Anthropic()
+    # Call Gemini API with vision
+    genai.configure(api_key=os.environ.get("GEMINI_API_KEY"))
+    model = genai.GenerativeModel("gemini-2.0-flash")
     
-    message = client.messages.create(
-        model="claude-3-5-sonnet-20241022",
+    response = model.generate_content(
         max_tokens=1024,
         messages=[
             {
@@ -356,7 +356,7 @@ Format as structured text."""
         ],
     )
     
-    return message.content[0].text
+    return response.text
 
 
 def validate_image(uploaded_file):
@@ -405,16 +405,16 @@ def extract_from_docx(docx_file):
 
 #### **utils/ai_generator.py**
 ```python
-import anthropic
+import google.generativeai as genai
 import os
 
-client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
+genai.configure(api_key=os.environ.get("GEMINI_API_KEY"))
+model = genai.GenerativeModel("gemini-2.0-flash")
 
 def generate_tailored_resume(job_details, resume_content):
-    """Tailor resume to job requirements using Claude"""
+    """Tailor resume to job requirements using Gemini"""
     
-    message = client.messages.create(
-        model="claude-3-5-sonnet-20241022",
+    response = model.generate_content(
         max_tokens=2000,
         messages=[
             {
@@ -439,13 +439,13 @@ Return only the tailored resume text, no explanations."""
         ],
     )
     
-    return message.content[0].text
+    return response.text
 
 def generate_ats_score(resume_text, job_details):
     """Calculate ATS compatibility score"""
     
     message = client.messages.create(
-        model="claude-3-5-sonnet-20241022",
+        model="gemini-2.0-flash",
         max_tokens=1500,
         messages=[
             {
@@ -505,7 +505,7 @@ def generate_email_draft(job_details, ats_result):
     """Generate professional email draft"""
     
     message = client.messages.create(
-        model="claude-3-5-sonnet-20241022",
+        model="gemini-2.0-flash",
         max_tokens=800,
         messages=[
             {
@@ -533,7 +533,7 @@ def generate_linkedin_message(job_details, ats_result):
     """Generate LinkedIn message"""
     
     message = client.messages.create(
-        model="claude-3-5-sonnet-20241022",
+        model="gemini-2.0-flash",
         max_tokens=500,
         messages=[
             {
@@ -631,7 +631,7 @@ uploads/
 ```markdown
 # QuickApply AI
 
-An intelligent job application assistant powered by Claude AI. Tailor your resume, get ATS scores, and generate professional outreach messages—all in seconds.
+An intelligent job application assistant powered by Gemini AI. Tailor your resume, get ATS scores, and generate professional outreach messages—all in seconds.
 
 ## Features
 
@@ -653,7 +653,7 @@ An intelligent job application assistant powered by Claude AI. Tailor your resum
 ## Tech Stack
 
 - **Frontend**: Streamlit
-- **AI Engine**: Claude 3.5 Sonnet (Anthropic)
+- **AI Engine**: Gemini 2.0 Flash (Google AI)
 - **PDF Generation**: FPDF2
 - **File Processing**: PyPDF2, python-docx
 
@@ -674,7 +674,7 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 
 # Set API key
-export ANTHROPIC_API_KEY='your-api-key-here'
+export GEMINI_API_KEY='your-api-key-here'
 
 # Run app
 streamlit run streamlit_app.py
@@ -686,7 +686,7 @@ streamlit run streamlit_app.py
 2. Go to [Streamlit Cloud](https://streamlit.io/cloud)
 3. Click "New app"
 4. Select your repository and `streamlit_app.py`
-5. Add `ANTHROPIC_API_KEY` in Secrets
+5. Add `GEMINI_API_KEY` in Secrets
 6. Deploy!
 
 ## Configuration
@@ -694,15 +694,15 @@ streamlit run streamlit_app.py
 Create `.streamlit/secrets.toml` for local development:
 
 ```toml
-ANTHROPIC_API_KEY = "sk-ant-..."
+GEMINI_API_KEY = "AIza..."
 ```
 
 For Streamlit Cloud, add secrets in Settings → Secrets.
 
 ## API Keys
 
-Get your Anthropic API key:
-1. Visit [console.anthropic.com](https://console.anthropic.com)
+Get your Google AI API key:
+1. Visit [aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey)
 2. Create account
 3. Generate API key
 4. Add to environment variables
@@ -730,7 +730,7 @@ pip install -r requirements.txt
 ```
 
 **"API Key not found"**
-Check that `ANTHROPIC_API_KEY` is set in environment or Streamlit secrets.
+Check that `GEMINI_API_KEY` is set in environment or Streamlit secrets.
 
 **"Failed to process image"**
 Ensure image is clear and contains readable job posting text.
@@ -780,7 +780,7 @@ MIT License - see LICENSE file for details
 
 3. **Add Secrets**
    - In app settings, go to "Secrets"
-   - Add: `ANTHROPIC_API_KEY = "sk-ant-..."`
+   - Add: `GEMINI_API_KEY = "AIza..."`
 
 4. **Deploy** - Your app goes live instantly!
 
@@ -798,7 +798,7 @@ echo "python-3.11.0" > runtime.txt
 
 # Deploy
 heroku create your-app-name
-heroku config:set ANTHROPIC_API_KEY="sk-ant-..."
+heroku config:set GEMINI_API_KEY="AIza..."
 git push heroku main
 ```
 
@@ -819,7 +819,7 @@ git push heroku main
 | Service | Cost |
 |---------|------|
 | Streamlit Cloud | **FREE** (up to 3 apps) |
-| Anthropic Claude API | ~$0.003/1K input tokens |
+| Google AI Gemini API | ~$0.003/1K input tokens |
 | GitHub | FREE (public repo) |
 | **Total** | **~$0.10 per app use** |
 
@@ -849,7 +849,7 @@ git push origin main
 
 1. ✅ Create GitHub repo
 2. ✅ Add files above
-3. ✅ Get Anthropic API key
+3. ✅ Get Google AI API key
 4. ✅ Deploy to Streamlit Cloud
 5. ✅ Share with friends!
 

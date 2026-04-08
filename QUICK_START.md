@@ -3,7 +3,7 @@
 ## 📋 What You're Getting
 
 A complete, production-ready Streamlit app that:
-- Extracts job details from LinkedIn screenshots using Claude Vision
+- Extracts job details from LinkedIn screenshots using Gemini Vision
 - Tailors resumes to job requirements
 - Calculates ATS compatibility scores
 - Generates professional email drafts
@@ -16,11 +16,11 @@ A complete, production-ready Streamlit app that:
 
 ## 🚀 Deployment in 5 Steps
 
-### Step 1: Get Anthropic API Key (2 minutes)
-1. Go to [console.anthropic.com](https://console.anthropic.com)
+### Step 1: Get Google AI API Key (2 minutes)
+1. Go to [aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey)
 2. Sign up with email or Google
 3. Click "API Keys" → "Create Key"
-4. Copy the key (starts with `sk-ant-`)
+4. Copy the key (starts with `AIza`)
 5. **Save it somewhere safe!**
 
 ### Step 2: Create GitHub Repo (2 minutes)
@@ -61,7 +61,7 @@ A complete, production-ready Streamlit app that:
 5. Click "Advanced settings" → "Secrets"
 6. Add this:
    ```
-   ANTHROPIC_API_KEY = "sk-ant-YOUR_KEY_HERE"
+   GEMINI_API_KEY = "AIzaYOUR_KEY_HERE"
    ```
 7. Click "Deploy"
 8. Wait 2-3 minutes ✨
@@ -90,7 +90,7 @@ your-github-repo/
     ├── __init__.py          ← Empty file
     ├── image_processor.py   ← Extract job details
     ├── resume_processor.py  ← Read resume files
-    ├── ai_generator.py      ← Claude API calls
+    ├── ai_generator.py      ← Gemini API calls
     └── pdf_generator.py     ← Create PDF
 ```
 
@@ -119,7 +119,7 @@ your-github-repo/
 2. Go to "Manage App" → "Logs"
 3. Look for red error messages
 
-### "ANTHROPIC_API_KEY not found"
+### "GEMINI_API_KEY not found"
 1. Go to Streamlit Cloud dashboard
 2. Click your app
 3. Click "Settings"
@@ -143,7 +143,7 @@ your-github-repo/
 |---------|------|
 | Streamlit Cloud | **FREE** |
 | GitHub | **FREE** |
-| Claude API | ~$0.05-0.10 per app |
+| Gemini API | ~$0.05-0.10 per app |
 | **Total Monthly** | **$1-3** (for 20-60 apps) |
 
 ---
@@ -188,7 +188,7 @@ Your API key:
 | `requirements.txt` | Python package versions |
 | `utils/image_processor.py` | Extracts job details from screenshots |
 | `utils/resume_processor.py` | Reads PDF/DOCX/TXT resumes |
-| `utils/ai_generator.py` | Calls Claude API for all AI features |
+| `utils/ai_generator.py` | Calls Gemini API for all AI features |
 | `utils/pdf_generator.py` | Creates formatted resume PDFs |
 | `.gitignore` | Prevents committing secrets |
 | `README.md` | Project documentation |
@@ -200,7 +200,7 @@ Your API key:
 ### 📸 Job Extraction
 - Reads LinkedIn job post screenshot
 - Extracts: title, company, requirements, skills
-- Uses Claude Vision API
+- Uses Gemini Vision API
 
 ### ✏️ Resume Tailoring
 - Reads your resume
@@ -267,7 +267,7 @@ Your API key:
 
 ## 📋 Deployment Checklist
 
-- [ ] Anthropic API key created
+- [ ] Google AI API key created
 - [ ] GitHub account ready
 - [ ] GitHub repo created (public)
 - [ ] All files uploaded to GitHub

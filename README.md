@@ -1,6 +1,6 @@
 # 🚀 QuickApply AI
 
-An intelligent job application assistant powered by Claude AI. Tailor your resume, get ATS scores, and generate professional outreach messages—all in seconds.
+An intelligent job application assistant powered by Gemini AI. Tailor your resume, get ATS scores, and generate professional outreach messages—all in seconds.
 
 ## ✨ Features
 
@@ -10,7 +10,7 @@ An intelligent job application assistant powered by Claude AI. Tailor your resum
 - **LinkedIn Messages** - Create personalized connection request messages
 - **One-Click PDF Export** - Download formatted resumes with a single click
 - **Zero Setup Required** - No login, no database, no complex configuration
-- **Free to Use** - Powered by Claude API (minimal cost)
+- **Free to Use** - Powered by Gemini API (minimal cost)
 
 ## 🎯 How It Works
 
@@ -21,9 +21,9 @@ An intelligent job application assistant powered by Claude AI. Tailor your resum
 5. **Download & Send** - Download resume PDF and copy message drafts
 
 ```
-LinkedIn Job Post Screenshot → Claude Vision API → Extract Job Details
+LinkedIn Job Post Screenshot → Gemini Vision API → Extract Job Details
                                                     ↓
-Your Resume → Claude Text API → Tailor Resume + ATS Score + Email Draft + LinkedIn Message
+Your Resume → Gemini Text API → Tailor Resume + ATS Score + Email Draft + LinkedIn Message
                                  ↓
                           Download Resume (PDF) + Copy Messages
 ```
@@ -34,7 +34,7 @@ Your Resume → Claude Text API → Tailor Resume + ATS Score + Email Draft + Li
 
 **Prerequisites:**
 - GitHub account
-- Anthropic API key (from [console.anthropic.com](https://console.anthropic.com))
+- Google AI API key (from [aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey))
 
 **Steps:**
 
@@ -43,7 +43,7 @@ Your Resume → Claude Text API → Tailor Resume + ATS Score + Email Draft + Li
 3. Connect your GitHub account
 4. Click "New app" and select this repository
 5. Choose `streamlit_app.py` as the entry point
-6. Add `ANTHROPIC_API_KEY` in **Settings → Secrets**
+6. Add `GEMINI_API_KEY` in **Settings → Secrets**
 7. Deploy! 🎉
 
 Your app will be live at: `https://quickapply-ai-[your-name].streamlit.app`
@@ -74,7 +74,7 @@ venv\Scripts\activate
 pip install -r requirements.txt
 
 # Set API key
-export ANTHROPIC_API_KEY='your-api-key-here'
+export GEMINI_API_KEY='your-api-key-here'
 
 # Run app
 streamlit run streamlit_app.py
@@ -92,7 +92,7 @@ heroku login
 heroku create your-app-name
 
 # Set API key
-heroku config:set ANTHROPIC_API_KEY='your-api-key-here'
+heroku config:set GEMINI_API_KEY='your-api-key-here'
 
 # Deploy
 git push heroku main
@@ -110,29 +110,29 @@ quickapply-ai/
     ├── __init__.py
     ├── image_processor.py        # Extract text from job post screenshots
     ├── resume_processor.py       # Process resume files (PDF, DOCX, TXT)
-    ├── ai_generator.py          # Claude API integration for all AI features
+    ├── ai_generator.py          # Gemini API integration for all AI features
     └── pdf_generator.py         # Create formatted resume PDFs
 ```
 
 ## 🔑 Getting Your API Key
 
-1. Visit [console.anthropic.com](https://console.anthropic.com)
+1. Visit [aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey)
 2. Sign up or log in
 3. Navigate to **API Keys**
 4. Create a new API key
 5. Copy and securely store it
 
 **For Streamlit Cloud:**
-- Add to **Settings → Secrets** as `ANTHROPIC_API_KEY`
+- Add to **Settings → Secrets** as `GEMINI_API_KEY`
 
 **For Local Development:**
 ```bash
-export ANTHROPIC_API_KEY='sk-ant-...'
+export GEMINI_API_KEY='AIza...'
 ```
 
 **For Heroku:**
 ```bash
-heroku config:set ANTHROPIC_API_KEY='sk-ant-...'
+heroku config:set GEMINI_API_KEY='AIza...'
 ```
 
 ## 💻 Tech Stack
@@ -140,8 +140,8 @@ heroku config:set ANTHROPIC_API_KEY='sk-ant-...'
 | Component | Technology |
 |-----------|-----------|
 | Frontend | Streamlit |
-| AI Engine | Claude 3.5 Sonnet (Anthropic) |
-| Vision API | Claude Vision (Image Analysis) |
+| AI Engine | Gemini 2.0 Flash (Google AI) |
+| Vision API | Gemini Vision (Image Analysis) |
 | PDF Generation | FPDF2 |
 | Document Processing | PyPDF2, python-docx |
 | Hosting | Streamlit Cloud / Heroku |
@@ -151,7 +151,7 @@ heroku config:set ANTHROPIC_API_KEY='sk-ant-...'
 | Service | Cost |
 |---------|------|
 | Streamlit Cloud | **FREE** (3 apps per account) |
-| Anthropic Claude API | ~$0.003 per 1K input tokens |
+| Google AI Gemini API | ~$0.003 per 1K input tokens |
 | GitHub | **FREE** (public repos) |
 | **Estimated Cost per Job** | **$0.05 - $0.10** |
 
@@ -162,7 +162,7 @@ heroku config:set ANTHROPIC_API_KEY='sk-ant-...'
 Create `.streamlit/secrets.toml`:
 
 ```toml
-ANTHROPIC_API_KEY = "sk-ant-..."
+GEMINI_API_KEY = "AIza..."
 ```
 
 ### Streamlit Cloud
@@ -171,7 +171,7 @@ ANTHROPIC_API_KEY = "sk-ant-..."
 2. Click **Secrets**
 3. Add:
 ```toml
-ANTHROPIC_API_KEY = "sk-ant-..."
+GEMINI_API_KEY = "AIza..."
 ```
 
 ## 🔒 Security Best Practices
@@ -194,7 +194,7 @@ ANTHROPIC_API_KEY = "sk-ant-..."
 All dependencies are listed in `requirements.txt`:
 
 - **streamlit** - Web app framework
-- **anthropic** - Claude API client
+- **google-generativeai** - Gemini API client
 - **pillow** - Image processing
 - **PyPDF2** - PDF reading
 - **python-docx** - DOCX file support
@@ -202,19 +202,19 @@ All dependencies are listed in `requirements.txt`:
 
 ## 🐛 Troubleshooting
 
-### "ModuleNotFoundError: No module named 'anthropic'"
+### "ModuleNotFoundError: No module named 'google.generativeai'"
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### "ANTHROPIC_API_KEY not found"
+### "GEMINI_API_KEY not found"
 
 Make sure you've set the environment variable:
 ```bash
-export ANTHROPIC_API_KEY='your-key-here'
+export GEMINI_API_KEY='your-key-here'
 # or
-heroku config:set ANTHROPIC_API_KEY='your-key-here'
+heroku config:set GEMINI_API_KEY='your-key-here'
 ```
 
 ### "Failed to extract job details from image"
@@ -234,7 +234,7 @@ heroku config:set ANTHROPIC_API_KEY='your-key-here'
 
 - Check your internet connection
 - Verify API key is valid
-- Check Anthropic API status at [status.anthropic.com](https://status.anthropic.com)
+- Check Google AI API status at [status.cloud.google.com](https://status.cloud.google.com)
 
 ## 📈 Future Enhancements
 
@@ -281,7 +281,7 @@ If you found this helpful, please:
 ## 🙏 Acknowledgments
 
 Built with:
-- [Claude AI](https://claude.ai) by Anthropic
+- [Gemini AI](https://ai.google.dev) by Google AI
 - [Streamlit](https://streamlit.io) for the web framework
 - [FPDF2](https://py-pdf.github.io/fpdf2/) for PDF generation
 
@@ -291,6 +291,6 @@ Built with:
 
 **Made with ❤️ for job seekers everywhere**
 
-[Streamlit Cloud](https://streamlit.io/cloud) • [Anthropic API](https://www.anthropic.com/api) • [GitHub](https://github.com)
+[Streamlit Cloud](https://streamlit.io/cloud) • [Google AI API](https://ai.google.dev) • [GitHub](https://github.com)
 
 </div>

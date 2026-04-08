@@ -1,6 +1,18 @@
 import google.generativeai as genai
 import os
 import re
+from functools import lru_cache
+
+DEFAULT_GEMINI_MODELS = (
+    "gemini-2.5-flash",
+    "gemini-2.5-pro",
+    "gemini-2.0-flash",
+    "gemini-2.0-flash-lite",
+)
+
+
+def _normalize_model_name(model_name):
+    return (model_name or "").replace("models/", "").strip()
 
 def configure_genai():
     """Initializes the Gemini API"""
@@ -9,9 +21,67 @@ def configure_genai():
         raise ValueError("GEMINI_API_KEY not set in Secrets.")
     genai.configure(api_key=api_key)
 
-def generate_tailored_resume(job_details, resume_content):
+
+@lru_cache(maxsize=1)
+def _list_generate_content_models():
+    """Returns model names that support generateContent for this API key."""
     configure_genai()
-    model = genai.GenerativeModel('gemini-1.5-flash')
+    try:
+        models = genai.list_models()
+    except Exception:
+        return []
+
+    available = []
+    for model in models:
+        methods = getattr(model, "supported_generation_methods", []) or []
+        if "generateContent" in methods:
+            normalized = _normalize_model_name(getattr(model, "name", ""))
+            if normalized:
+                available.append(normalized)
+    return available
+
+
+def get_generative_model():
+    """Selects a supported Gemini model with safe fallbacks for deployment."""
+    configure_genai()
+
+    configured_model = _normalize_model_name(os.environ.get("GEMINI_MODEL", ""))
+    candidates = []
+    if configured_model:
+        candidates.append(configured_model)
+    candidates.extend(model for model in DEFAULT_GEMINI_MODELS if model not in candidates)
+
+    available_models = _list_generate_content_models()
+    if available_models:
+        for model_name in candidates:
+            if model_name in available_models:
+                return genai.GenerativeModel(model_name)
+
+        flash_models = [m for m in available_models if "flash" in m]
+        return genai.GenerativeModel((flash_models or available_models)[0])
+
+    # If model listing is unavailable, probe candidates and pick the first that works.
+    for model_name in candidates:
+        try:
+            model = genai.GenerativeModel(model_name)
+            model.generate_content("Reply with OK.")
+            return model
+        except Exception:
+            continue
+
+    raise RuntimeError(
+        "No supported Gemini model found. Set GEMINI_MODEL to a valid model from your account."
+    )
+
+
+def get_active_model_name():
+    """Returns the currently selected Gemini model name for diagnostics."""
+    model = get_generative_model()
+    model_name = getattr(model, "model_name", "") or getattr(model, "_model_name", "")
+    return _normalize_model_name(model_name) or "unknown"
+
+def generate_tailored_resume(job_details, resume_content):
+    model = get_generative_model()
     
     prompt = f"""You are an expert resume writer. Tailor this resume to match the job requirements perfectly while keeping the original structure.
     JOB REQUIREMENTS:
@@ -24,8 +94,7 @@ def generate_tailored_resume(job_details, resume_content):
     return response.text
 
 def generate_ats_score(resume_text, job_details):
-    configure_genai()
-    model = genai.GenerativeModel('gemini-1.5-flash')
+    model = get_generative_model()
     
     prompt = f"""Analyze this resume against job requirements for ATS compatibility.
     FORMAT:
@@ -59,13 +128,11 @@ def generate_ats_score(resume_text, job_details):
     return result
 
 def generate_email_draft(job_details, resume_content):
-    configure_genai()
-    model = genai.GenerativeModel('gemini-1.5-flash')
+    model = get_generative_model()
     prompt = f"Write a professional 200-word application email with a Subject line.\nJob: {job_details}\nResume: {resume_content[:500]}"
     return model.generate_content(prompt).text
 
 def generate_linkedin_message(job_details, resume_content):
-    configure_genai()
-    model = genai.GenerativeModel('gemini-1.5-flash')
+    model = get_generative_model()
     prompt = f"Write a 100-word LinkedIn DM for this role.\nJob: {job_details}\nResume: {resume_content[:400]}"
     return model.generate_content(prompt).text

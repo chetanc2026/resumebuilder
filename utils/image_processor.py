@@ -1,22 +1,18 @@
-import google.generativeai as genai
 from PIL import Image
 import os
+from .ai_generator import get_generative_model
 
 def extract_text_from_image(uploaded_file):
-    """Extract job details from LinkedIn screenshot using Gemini 1.5 Flash"""
+    """Extract job details from a LinkedIn screenshot using Gemini."""
     try:
         api_key = os.environ.get("GEMINI_API_KEY")
         if not api_key:
             raise ValueError("GEMINI_API_KEY not found in environment variables.")
         
-        # Initialize the SDK
-        genai.configure(api_key=api_key)
-        
         # Load the image
         img = Image.open(uploaded_file)
         
-        # Use the stable model name
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        model = get_generative_model()
         
         prompt = """Analyze this LinkedIn job posting screenshot and extract the following information:
         1. Job Title
