@@ -1,5 +1,5 @@
 from fpdf import FPDF
-import io
+import re
 import textwrap
 
 
@@ -25,84 +25,257 @@ def _sanitize_pdf_text(text):
     # Keep only characters supported by core fonts.
     return text.encode("latin-1", errors="ignore").decode("latin-1")
 
+
+def _is_section_header(line):
+    normalized = line.strip()
+    if not normalized:
+        return False
+
+    known_sections = {
+        "summary",
+        "professional summary",
+        "objective",
+        "skills",
+        "technical skills",
+        "core competencies",
+        "experience",
+        "professional experience",
+        "work experience",
+        "internship experience",
+        "education",
+        "projects",
+        "certifications",
+        "achievements",
+        "awards",
+        "activities",
+        "volunteering",
+        "leadership",
+        "languages",
+        "references",
+    }
+
+    lower = normalized.lower()
+    if lower in known_sections:
+        return True
+
+    return (
+        normalized.isupper()
+        and len(normalized) < 50
+        and len(normalized.split()) <= 4
+    )
+
+
+def _detect_candidate_profile(resume_text):
+    lowered = resume_text.lower()
+
+    fresher_markers = (
+        "fresher",
+        "recent graduate",
+        "new graduate",
+        "student",
+        "intern",
+        "entry level",
+        "entry-level",
+    )
+    if any(marker in lowered for marker in fresher_markers):
+        return "fresher"
+
+    year_mentions = [int(match) for match in re.findall(r"(\d{1,2})\+?\s+years?", lowered)]
+    if year_mentions and max(year_mentions) >= 2:
+        return "experienced"
+
+    date_ranges = re.findall(r"(19\d{2}|20\d{2})\s*[-–—]\s*(present|current|19\d{2}|20\d{2})", lowered)
+    if len(date_ranges) >= 1:
+        return "experienced"
+
+    if any(keyword in lowered for keyword in ("professional experience", "work experience", "employment history")):
+        return "experienced"
+
+    return "fresher"
+
+
+def _layout_for_profile(profile):
+    if profile == "fresher":
+        return {
+            "margin": 9,
+            "title_size": 15,
+            "section_size": 11.25,
+            "body_size": 9,
+            "body_height": 3.95,
+            "bullet_indent": 13,
+            "name_spacing": 1.5,
+            "section_spacing": 1.5,
+            "paragraph_spacing": 1.2,
+            "bottom_margin": 10,
+        }
+
+    return {
+        "margin": 12,
+        "title_size": 16,
+        "section_size": 11.5,
+        "body_size": 9.5,
+        "body_height": 4.25,
+        "bullet_indent": 14,
+        "name_spacing": 2,
+        "section_spacing": 2,
+        "paragraph_spacing": 1.5,
+        "bottom_margin": 12,
+    }
+
+
+def _apply_font(pdf, family="Times", style="", size=10):
+    pdf.set_font(family, style, size)
+
+
+def _extract_header_block(lines):
+    header_lines = []
+    body_start_index = 0
+
+    for index, line in enumerate(lines):
+        if _is_section_header(line):
+            body_start_index = index
+            break
+
+        if line.strip():
+            header_lines.append(line.strip())
+            body_start_index = index + 1
+
+    return header_lines, body_start_index
+
+
+def _render_header(pdf, header_lines, layout, candidate_name=""):
+    heading_color = (11, 31, 58)
+    body_color = (0, 0, 0)
+
+    name_line = _sanitize_pdf_text(candidate_name.strip()) if candidate_name else ""
+    header_lines = [_sanitize_pdf_text(line.strip()) for line in header_lines if line.strip()]
+
+    if not name_line and header_lines:
+        name_line = header_lines[0]
+        header_lines = header_lines[1:]
+
+    if name_line:
+        _apply_font(pdf, "Times", "B", layout["title_size"])
+        pdf.set_text_color(*heading_color)
+        pdf.cell(0, 7, name_line, align="C", ln=True)
+
+    if header_lines:
+        pdf.set_text_color(*body_color)
+        _apply_font(pdf, "Times", "", layout["body_size"])
+        for line in header_lines:
+            pdf.cell(0, layout["body_height"] + 0.4, line, align="C", ln=True)
+
+    if name_line or header_lines:
+        pdf.ln(layout["name_spacing"])
+        pdf.set_draw_color(*heading_color)
+        pdf.line(pdf.l_margin, pdf.get_y(), pdf.w - pdf.r_margin, pdf.get_y())
+        pdf.ln(layout["section_spacing"])
+        pdf.set_draw_color(0, 0, 0)
+
+
+def _render_section_header(pdf, title, layout):
+    heading_color = (11, 31, 58)
+    pdf.ln(layout["section_spacing"])
+    pdf.set_text_color(*heading_color)
+    _apply_font(pdf, "Times", "B", layout["section_size"])
+    pdf.cell(0, 6, title.strip().upper(), ln=True)
+    pdf.set_draw_color(*heading_color)
+    pdf.line(pdf.l_margin, pdf.get_y(), pdf.w - pdf.r_margin, pdf.get_y())
+    pdf.ln(1)
+    pdf.set_text_color(0, 0, 0)
+    _apply_font(pdf, "Times", "", layout["body_size"])
+
+
+def _render_bullet(pdf, line, layout):
+    bullet_text = line.lstrip("•- ").strip()
+    bullet_text = textwrap.fill(bullet_text, width=76 if layout["body_size"] >= 9.5 else 72)
+    wrapped_lines = bullet_text.split("\n")
+
+    for index, wrapped_line in enumerate(wrapped_lines):
+        pdf.set_x(pdf.l_margin + layout["bullet_indent"])
+        prefix = "- " if index == 0 else "  "
+        pdf.multi_cell(0, layout["body_height"], f"{prefix}{wrapped_line}")
+
+
+def _render_resume(pdf, resume_text, candidate_name=""):
+    cleaned_text = _sanitize_pdf_text(resume_text)
+    profile = _detect_candidate_profile(cleaned_text)
+    layout = _layout_for_profile(profile)
+    lower_priority_sections = {
+        "skills",
+        "technical skills",
+        "core competencies",
+        "projects",
+        "education",
+        "certifications",
+        "languages",
+        "references",
+        "awards",
+        "achievements",
+        "activities",
+        "volunteering",
+    }
+
+    pdf.set_auto_page_break(auto=True, margin=layout["bottom_margin"])
+    pdf.set_margins(left=layout["margin"], top=layout["margin"], right=layout["margin"])
+    pdf.add_page()
+    pdf.set_text_color(0, 0, 0)
+
+    lines = cleaned_text.split("\n")
+    header_lines, body_start_index = _extract_header_block(lines)
+    _render_header(pdf, header_lines, layout, candidate_name=candidate_name)
+
+    _apply_font(pdf, "Times", "", layout["body_size"])
+    seen_experience = False
+
+    for line in lines[body_start_index:]:
+        line_stripped = line.strip()
+
+        if not line_stripped:
+            pdf.ln(layout["paragraph_spacing"])
+            continue
+
+        pdf.set_x(pdf.l_margin)
+
+        if _is_section_header(line_stripped):
+            normalized_section = line_stripped.strip().lower()
+            if profile == "experienced" and seen_experience and normalized_section in lower_priority_sections and pdf.page_no() == 1:
+                pdf.add_page()
+                pdf.set_text_color(0, 0, 0)
+                _apply_font(pdf, "Times", "", layout["body_size"])
+
+            if normalized_section in {"experience", "professional experience", "work experience", "internship experience"}:
+                seen_experience = True
+
+            _render_section_header(pdf, line_stripped, layout)
+            continue
+
+        if line_stripped.startswith(("-", "•", "*")):
+            _apply_font(pdf, "Times", "", layout["body_size"])
+            _render_bullet(pdf, line_stripped, layout)
+            continue
+
+        date_like = re.search(r"\b(19\d{2}|20\d{2})\b", line_stripped) or re.search(r"\b(present|current)\b", line_stripped.lower())
+        if date_like and len(line_stripped) < 120:
+            _apply_font(pdf, "Times", "B", layout["body_size"])
+            pdf.multi_cell(0, layout["body_height"] + 0.4, line_stripped)
+            _apply_font(pdf, "Times", "", layout["body_size"])
+            continue
+
+        _apply_font(pdf, "Times", "", layout["body_size"])
+        pdf.multi_cell(0, layout["body_height"], line_stripped)
+
+    return profile, layout
+
 def create_resume_pdf(resume_text):
     """Create a professionally formatted PDF from resume text"""
     
     try:
-        pdf = FPDF()
-        pdf.add_page()
-        
-        # Set margins
-        pdf.set_margins(left=10, top=10, right=10)
-        
-        # Process resume text
-        lines = _sanitize_pdf_text(resume_text).split("\n")
-        
-        # Track for section headers
-        in_section = False
-        
-        for line in lines:
-            line_stripped = line.strip()
-            
-            if not line_stripped:
-                pdf.ln(3)  # Small spacing for blank lines
-                continue
+        pdf = FPDF(format="A4", unit="mm")
+        _render_resume(pdf, resume_text)
 
-            # Keep cursor at left margin before writing any new content line.
-            pdf.set_x(pdf.l_margin)
-            
-            # Check if line is a section header (all caps, relatively short)
-            is_header = (
-                line_stripped.isupper() and 
-                len(line_stripped) < 50 and 
-                len(line_stripped.split()) <= 3
-            )
-            
-            if is_header:
-                # Section header formatting
-                if pdf.get_y() > 10:  # Add spacing before section if not at top
-                    pdf.ln(3)
-                pdf.set_font("Arial", "B", 13)
-                pdf.set_text_color(80, 100, 200)  # Blue color for headers
-                pdf.cell(0, 7, line_stripped, ln=True)
-                pdf.set_text_color(0, 0, 0)  # Reset to black
-                pdf.ln(2)
-                in_section = True
-            
-            elif line.startswith("•") or line.startswith("-"):
-                # Bullet point
-                pdf.set_font("Arial", "", 10)
-                # Extract bullet content and wrap
-                bullet_text = line.lstrip("•- ").strip()
-                pdf.set_x(15)  # Indent bullet
-                
-                # Handle multi-line bullets
-                wrapped_text = textwrap.fill(bullet_text, width=70)
-                wrapped_lines = wrapped_text.split("\n")
-                for idx, wrapped_line in enumerate(wrapped_lines):
-                    pdf.set_x(15)
-                    prefix = "- " if idx == 0 else "  "
-                    pdf.multi_cell(0, 5, f"{prefix}{wrapped_line}")
-            
-            elif any(char.isdigit() for char in line_stripped[:10]):
-                # Likely a date or numbered entry
-                pdf.set_font("Arial", "B", 10)
-                pdf.multi_cell(0, 5, line_stripped)
-            
-            else:
-                # Regular text
-                pdf.set_font("Arial", "", 10)
-                pdf.multi_cell(0, 5, line_stripped, align='L')
-            
-            # Check page break
-            if pdf.get_y() > 270:
-                pdf.add_page()
-                pdf.set_margins(left=10, top=10, right=10)
-        
-        # Convert to bytes across fpdf2 versions.
         raw_output = pdf.output(dest="S")
-        pdf_bytes = raw_output.encode("latin-1") if isinstance(raw_output, str) else bytes(raw_output)
-        return pdf_bytes
+        return raw_output.encode("latin-1") if isinstance(raw_output, str) else bytes(raw_output)
     
     except Exception as e:
         raise Exception(f"Failed to generate PDF: {str(e)}")
@@ -113,60 +286,7 @@ def create_styled_resume_pdf(resume_text, candidate_name=""):
     
     try:
         pdf = FPDF(format='A4', unit='mm')
-        pdf.add_page()
-        
-        # Set standard margins
-        pdf.set_margins(left=12, top=12, right=12)
-        page_width = pdf.w - 24
-        
-        # Add name if provided
-        if candidate_name:
-            candidate_name = _sanitize_pdf_text(candidate_name)
-            pdf.set_font("Arial", "B", 16)
-            pdf.cell(0, 8, candidate_name, ln=True, align="C")
-            pdf.ln(2)
-        
-        # Process resume
-        lines = _sanitize_pdf_text(resume_text).split("\n")
-        
-        for line in lines:
-            line_stripped = line.strip()
-            
-            if not line_stripped:
-                pdf.ln(2)
-                continue
-
-            # Keep cursor at left margin before writing any new content line.
-            pdf.set_x(pdf.l_margin)
-            
-            # Section headers
-            if (line_stripped.isupper() and 
-                len(line_stripped) < 50 and 
-                len(line_stripped.split()) <= 4):
-                
-                if pdf.get_y() > 20:
-                    pdf.ln(2)
-                
-                # Colored section header
-                pdf.set_font("Arial", "B", 12)
-                pdf.set_text_color(40, 80, 150)
-                pdf.cell(0, 6, line_stripped, border_b=1, ln=True)
-                pdf.set_text_color(0, 0, 0)
-                pdf.ln(1)
-            
-            else:
-                # Regular content
-                pdf.set_font("Arial", "", 9.5)
-                
-                # Wrap text if needed
-                if len(line_stripped) > 80:
-                    pdf.multi_cell(0, 4, line_stripped)
-                else:
-                    pdf.cell(0, 4, line_stripped, ln=True)
-            
-            # Auto page break
-            if pdf.will_page_break(4):
-                pdf.add_page()
+        _render_resume(pdf, resume_text, candidate_name=candidate_name)
         
         raw_output = pdf.output(dest="S")
         return raw_output.encode("latin-1") if isinstance(raw_output, str) else bytes(raw_output)
