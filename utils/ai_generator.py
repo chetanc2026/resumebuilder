@@ -83,7 +83,7 @@ def get_active_model_name():
 def generate_tailored_resume(job_details, resume_content):
     model = get_generative_model()
 
-        prompt = f"""You are a professional resume writer. Rewrite the resume into a clean, ATS-friendly, American-style resume.
+    prompt = f"""You are a professional resume writer. Rewrite the resume into a clean, ATS-friendly, American-style resume.
 
 Hard rules:
 - Output plain text only. No markdown, no bullets with symbols other than standard bullet lines, no tables, no icons, no explanations.
